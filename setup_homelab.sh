@@ -79,14 +79,27 @@ fi
 
 # -------- 6) NVIDIA drivers + nvidia-container-toolkit --------
 log "Installing NVIDIA drivers + nvidia-container-toolkit..."
+
+# Рекомендуемый драйвер (если уже стоит — пропустит)
 apt-get install -y ubuntu-drivers-common
 ubuntu-drivers autoinstall || true
-curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-curl -fsSL https://nvidia.github.io/libnvidia-container/$(. /etc/os-release; echo $ID)/libnvidia-container.list \
+
+# Репозиторий NVIDIA Container Toolkit — корректный для Ubuntu 22.04
+distribution=$(. /etc/os-release; echo ${ID}${VERSION_ID})
+
+# Ключ репозитория
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey \
+  | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+
+# Подключение репозитория (важно: $distribution, а не "stable")
+curl -fsSL https://nvidia.github.io/libnvidia-container/${distribution}/libnvidia-container.list \
   | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' \
   | tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
 apt-get update -y
 apt-get install -y nvidia-container-toolkit
+
+# Настройка Docker под NVIDIA
 nvidia-ctk runtime configure --runtime=docker || true
 systemctl restart docker || true
 
